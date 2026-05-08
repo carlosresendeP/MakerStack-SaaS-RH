@@ -16,8 +16,10 @@ const app: FastifyInstance = Fastify({
 });
 
 app.register(cors, {
-    origin: true, // Permitir todas as origens
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Métodos HTTP permitidos
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Type'],
 });
 
 //validações do fastify com zod

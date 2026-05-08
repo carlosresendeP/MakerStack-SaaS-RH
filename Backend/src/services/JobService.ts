@@ -38,7 +38,13 @@ export class JobService {
     }
 
     try {
-      const job = await prisma.job.create({ data: { ...data, companyId } });
+      const job = await prisma.job.create({
+        data: {
+          ...data,
+          descricao: data.descricao ?? "", // coluna NOT NULL — usa string vazia até a IA gerar o JD
+          companyId,
+        },
+      });
       return {
         ...job,
         createdAt: formatBR(job.createdAt),

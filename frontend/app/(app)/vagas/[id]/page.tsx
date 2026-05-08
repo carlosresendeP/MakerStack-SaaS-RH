@@ -3,21 +3,51 @@
 import { useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Copy, Link2, SendHorizonal, User, Users } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { z } from "zod"
+import {
+  ChevronLeft,
+  Copy,
+  Link2,
+  Pencil,
+  SendHorizonal,
+  User,
+  Users,
+} from "lucide-react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { RankingSidebar } from "@/components/relatorio/RankingSidebar"
 import { CandidateAnalysis } from "@/components/relatorio/CandidateAnalysis"
 import { useJob } from "@/hooks/useJobs"
 import { useJobApplications } from "@/hooks/useApplications"
+import { useOrganograma } from "@/hooks/useOrganograma"
 import { jobService } from "@/services/job.service"
 import { applicationService } from "@/services/application.service"
 import { cn } from "@/lib/utils"
-import type { Application, JobStatus } from "@/types/api"
+import type { Application, Job, JobStatus } from "@/types/api"
+
+// ─── Status config ─────────────────────────────────────────────────────────────
 
 const statusConfig: Record<JobStatus, { label: string; className: string }> = {
   ABERTA:  { label: "ABERTA",  className: "bg-secondary/20 text-sidebar border-secondary/40" },
@@ -37,6 +67,193 @@ function copyToClipboard(text: string, label: string) {
   navigator.clipboard.writeText(text).then(() => toast.success(`${label} copiado!`))
 }
 
+// ─── Edit schema ───────────────────────────────────────────────────────────────
+
+const editSchema = z.object({
+  titulo:    z.string().min(3, "Mínimo 3 caracteres"),
+  descricao: z.string().optional(),
+  requisitos: z.string().optional(),
+  salaryMin: z.coerce.number().positive().optional().or(z.literal("")),
+  salaryMax: z.coerce.number().positive().optional().or(z.literal("")),
+  status:    z.enum(["ABERTA", "PAUSADA", "FECHADA"]),
+  liderId:   z.string().optional(),
+})
+
+type EditForm = z.infer<typeof editSchema>
+
+// ─── EditJobSheet ──────────────────────────────────────────────────────────────
+
+function EditJobSheet({
+  job,
+  open,
+  onClose,
+}: {
+  job: Job
+  open: boolean
+  onClose: () => void
+}) {
+  const queryClient = useQueryClient()
+  const { data: nodes = [] } = useOrganograma()
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<EditForm>({
+    resolver: zodResolver(editSchema),
+    defaultValues: {
+      titulo:     job.titulo,
+      descricao:  job.descricao ?? "",
+      requisitos: job.requisitos ?? "",
+      salaryMin:  job.salaryMin ? Number(job.salaryMin) : "",
+      salaryMax:  job.salaryMax ? Number(job.salaryMax) : "",
+      status:     job.status,
+      liderId:    job.liderId ?? "",
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: (data: EditForm) =>
+      jobService.update(job.id, {
+        titulo:     data.titulo,
+        descricao:  data.descricao || undefined,
+        requisitos: data.requisitos || undefined,
+        salaryMin:  data.salaryMin !== "" ? Number(data.salaryMin) : undefined,
+        salaryMax:  data.salaryMax !== "" ? Number(data.salaryMax) : undefined,
+        status:     data.status,
+        liderId:    data.liderId || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs", job.id] })
+      queryClient.invalidateQueries({ queryKey: ["jobs"] })
+      toast.success("Vaga atualizada!")
+      onClose()
+    },
+    onError: () => toast.error("Erro ao atualizar vaga."),
+  })
+
+  return (
+    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+        <SheetHeader className="mb-6">
+          <SheetTitle>Editar Vaga</SheetTitle>
+        </SheetHeader>
+
+        <form onSubmit={handleSubmit((d) => updateMutation.mutate(d))} className="space-y-4 px-4">
+          {/* Título */}
+          <div className="space-y-1.5">
+            <Label htmlFor="titulo">Título *</Label>
+            <Input id="titulo" {...register("titulo")} />
+            {errors.titulo && (
+              <p className="text-xs text-destructive">{errors.titulo.message}</p>
+            )}
+          </div>
+
+          {/* Status */}
+          <div className="space-y-1.5">
+            <Label>Status</Label>
+            <Select
+              value={watch("status")}
+              onValueChange={(v) => setValue("status", v as JobStatus)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ABERTA">Aberta</SelectItem>
+                <SelectItem value="PAUSADA">Pausada</SelectItem>
+                <SelectItem value="FECHADA">Fechada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Salários */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="salaryMin">Salário mínimo (R$)</Label>
+              <Input
+                id="salaryMin"
+                type="number"
+                placeholder="Ex: 3000"
+                {...register("salaryMin")}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="salaryMax">Salário máximo (R$)</Label>
+              <Input
+                id="salaryMax"
+                type="number"
+                placeholder="Ex: 6000"
+                {...register("salaryMax")}
+              />
+            </div>
+          </div>
+
+          {/* Líder */}
+          <div className="space-y-1.5">
+            <Label>Líder responsável</Label>
+            <Select
+              value={watch("liderId") ?? ""}
+              onValueChange={(v) => setValue("liderId", v === "none" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um líder (opcional)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum</SelectItem>
+                {nodes.map((n) => (
+                  <SelectItem key={n.id} value={n.id}>
+                    {n.nome} — {n.cargo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Descrição */}
+          <div className="space-y-1.5">
+            <Label htmlFor="descricao">Descrição</Label>
+            <Textarea
+              id="descricao"
+              rows={5}
+              placeholder="Descrição da vaga..."
+              {...register("descricao")}
+            />
+          </div>
+
+          {/* Requisitos */}
+          <div className="space-y-1.5">
+            <Label htmlFor="requisitos">Requisitos</Label>
+            <Textarea
+              id="requisitos"
+              rows={4}
+              placeholder="Requisitos da vaga..."
+              {...register("requisitos")}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="submit"
+              disabled={updateMutation.isPending}
+              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {updateMutation.isPending ? "Salvando..." : "Salvar alterações"}
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+          </div>
+        </form>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
 function PageSkeleton() {
   return (
     <div className="max-w-[1440px] mx-auto space-y-4">
@@ -52,11 +269,14 @@ function PageSkeleton() {
   )
 }
 
+// ─── Page ──────────────────────────────────────────────────────────────────────
+
 export default function VagaDetailPage() {
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
   const [testLinks, setTestLinks] = useState<Record<string, string>>({})
+  const [editOpen, setEditOpen] = useState(false)
 
   const { data: job, isLoading: jobLoading } = useJob(id)
   const { data: applications = [], isLoading: appsLoading } = useJobApplications(id)
@@ -127,18 +347,31 @@ export default function VagaDetailPage() {
           </p>
         </div>
 
-        {/* Link público de candidatura */}
-        {publicUrl && (
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Editar vaga */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => copyToClipboard(publicUrl, "Link da vaga")}
-            className="shrink-0 gap-2"
+            onClick={() => setEditOpen(true)}
+            className="gap-2"
           >
-            <Link2 className="size-4" />
-            Copiar Link Público
+            <Pencil className="size-4" />
+            Editar
           </Button>
-        )}
+
+          {/* Link público de candidatura */}
+          {publicUrl && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => copyToClipboard(publicUrl, "Link da vaga")}
+              className="gap-2"
+            >
+              <Link2 className="size-4" />
+              Copiar Link Público
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -179,7 +412,6 @@ export default function VagaDetailPage() {
                   Análise — {selectedApp.candidate?.nome ?? "Candidato"}
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  {/* Gerar / copiar link de teste */}
                   {testLinks[selectedApp.id] ? (
                     <button
                       onClick={() => copyToClipboard(testLinks[selectedApp.id], "Link do teste")}
@@ -234,6 +466,9 @@ export default function VagaDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit sheet — mounted only when job exists */}
+      <EditJobSheet job={job} open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
   )
 }
