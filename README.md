@@ -1,4 +1,4 @@
-# 🌐 SaaS-RH - Sistema de Gestão de Recursos Humanos
+# 🌐 EnvieAgora RH - Sistema de Gestão de Recursos Humanos
 
 Sistema completo para gerenciamento de processos de recrutamento e seleção focado em automatizar a triagem de candidatos, gerar análises precisas de compatibilidade através de Inteligência Artificial e organizar toda a estrutura da empresa.
 
