@@ -107,4 +107,8 @@
   html {
     @apply font-display antialiased;
   }
+
+  .container {
+    @apply mx-auto w-full max-w-7xl px-4;
+  }
 }

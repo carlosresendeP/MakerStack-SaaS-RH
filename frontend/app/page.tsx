@@ -148,13 +148,13 @@ export default function LandingPage() {
     <div className="bg-background text-foreground antialiased min-h-screen">
       <Header />
 
-      <main className="w-full max-w-[1440px] mx-auto overflow-hidden">
+      <main className="w-full  mx-auto overflow-hidden">
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <section className="relative overflow-hidden bg-[#1a2310]">
           {/* Lime top bar */}
           <div className="h-1.5 bg-primary w-full" />
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 min-h-[580px]">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 min-h-[580px] container">
             {/* Left: text */}
             <motion.div
               className="flex flex-col justify-center gap-8 px-8 md:px-14 lg:px-16 py-20 lg:py-24"
@@ -324,7 +324,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Value Props ───────────────────────────────────────────────── */}
-        <section className="px-6 py-20">
+        <section className="px-6 py-20 container">
           <motion.div
             className="text-center mb-14"
             variants={stagger}
@@ -392,37 +392,41 @@ export default function LandingPage() {
         </section>
 
         {/* ── Stats ─────────────────────────────────────────────────────── */}
-        <section className="mx-6 my-8 rounded-2xl overflow-hidden relative bg-[#2d3d1f]">
+        <section className="mx-4 md:mx-6 my-8 rounded-2xl overflow-hidden relative bg-[#2d3d1f]">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(196,255,87,0.12),transparent_60%)] pointer-events-none" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(196,255,87,0.06),transparent_60%)] pointer-events-none" />
 
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/10 relative z-10"
+            className="grid grid-cols-3 relative z-10"
             variants={stagger}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {STATS.map((stat) => (
+            {STATS.map((stat, i) => (
               <motion.div
                 key={stat.label}
                 variants={fadeUp}
-                className="flex flex-col items-center justify-center py-12 px-8 text-center"
+                className={`flex flex-col items-center justify-center py-8 px-3 md:py-12 md:px-8 text-center ${
+                  i < 2 ? "border-r border-white/10" : ""
+                }`}
               >
-                <span className="text-6xl font-bold text-primary mb-1 tabular-nums">
+                <span className="text-3xl md:text-6xl font-bold text-primary mb-1 tabular-nums">
                   <AnimatedNumber target={stat.target} suffix={stat.suffix} />
                 </span>
-                <span className="text-sm font-bold uppercase tracking-widest text-white/80 mt-1">
+                <span className="text-[10px] md:text-sm font-bold uppercase tracking-wider md:tracking-widest text-white/80 mt-1 leading-tight">
                   {stat.label}
                 </span>
-                <span className="text-xs text-white/40 mt-1">{stat.note}</span>
+                <span className="hidden md:block text-xs text-white/40 mt-1">
+                  {stat.note}
+                </span>
               </motion.div>
             ))}
           </motion.div>
         </section>
 
         {/* ── Feature Showcase ──────────────────────────────────────────── */}
-        <section className="px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <section className="px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center container">
           {/* Mock UI */}
           <motion.div
             className="order-2 lg:order-1 relative p-6 md:p-8 bg-muted/60 rounded-2xl border border-border"
@@ -527,7 +531,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Final CTA ─────────────────────────────────────────────────── */}
-        <section className="px-6 py-16 mb-20 max-w-3xl mx-auto text-center">
+        <section className="px-6 py-16 mb-20 max-w-3xl mx-auto text-center container">
           <motion.div
             className="relative bg-card border border-border rounded-3xl p-10 md:p-14 shadow-sm flex flex-col justify-center items-center gap-6 overflow-hidden"
             initial={{ opacity: 0, y: 40 }}
@@ -582,7 +586,7 @@ export default function LandingPage() {
       </main>
 
       {/* ── Footer ────────────────────────────────────────────────────── */}
-      <footer className="border-t border-border py-8 px-6">
+      <footer className="border-t border-border py-8 px-6 container">
         <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span className="text-sm font-bold text-foreground tracking-tight">
             Contrata<span className="text-primary">Já</span>
